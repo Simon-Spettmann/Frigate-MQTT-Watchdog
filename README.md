@@ -1,22 +1,21 @@
 # Frigate MQTT Watchdog
 
-A lightweight Python script to monitor and automatically fix Frigate's MQTT connection in Docker Compose setups by restarting the container if a disconnection is detected. It checks if the MQTT broker is reachable and the container is running before acting, and searches the Frigate MQTT module logs (`frigate.comms.mqtt`) with pattern matching to detect disconnections.
+A lightweight Bash script to monitor and automatically fix Frigate’s MQTT connection to Home Assistant by checking the states of the Frigate status entity and a given camera via the Home Assistant API. If a disconnection is detected it will restart the container. Intended for Docker Compose setups.
 
 ## Requirements
 
 This script is intended for Docker Compose setups and requires:
 
-- Python 3.7+
-- [paho-mqtt](https://pypi.org/project/paho-mqtt/) (installed via `requirements.txt`)
+- `curl` (for API calls)
+- `jq` (for JSON parsing)
+- `docker compose` (for container management)
 
-**Note:** The log level of `frigate.comms.mqtt` must be set to `debug` in the Frigate configuration:
+You will also need a [Long-Lived Access Token](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token) for your Home Assistant Instance:
 
-```yml
-logger:
-  # module by module log level configuration
-  logs:
-    frigate.comms.mqtt: debug
-```
+- Go to [https://my.home-assistant.io/redirect/profile](https://my.home-assistant.io/redirect/profile)
+- Switch to the tab "Security"
+- Scroll down to "Long-lived access tokens"
+- Create a long-lived access token
 
 ## Installation
 
@@ -29,37 +28,28 @@ git clone "https://github.com/Simon-Spettmann/Frigate-MQTT-Watchdog"
 Change into the repository directory:
 
 ```bash
-cd "Frigate-MQTT-Watchdog"
-```
-
-Set up a Python virtual environment:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
+cd Frigate-MQTT-Watchdog
 ```
 
 ## Configuration
 
-Set the following configuration variables in the Python script (`frigate_mqtt_watchdog.py`):
+Edit the script to set your configuration variables:
 
-```python
-docker_compose_workspace = "/path/to/docker-compose-workspace"
-mqtt_host = "homeassistant"
-mqtt_port = 1883
-container_name = "frigate"
+```bash
+HA_URL="https://my.home-assistant.io"
+HA_TOKEN="YOUR_LONG_LIVED_ACCESS_TOKEN"
+
+FRIGATE_STATUS_ENTITY_ID="sensor.frigate_status"
+CAMERA_ENTITY_ID="camera.<some-frigate-camera-id>"
+
+DOCKER_COMPOSE_WORKSPACE="/path/to/docker-compose-workspace"
+CONTAINER_NAME="frigate"
 ```
 
 ## Usage
 
 Set up a cronjob for continuous monitoring (e.g. every 5 minutes):
 
-```text
-*/5 * * * * /path/to/.venv/bin/python /path/to/frigate_mqtt_watchdog.py
+```bash
+*/5 * * * * /path/to/frigate-mqtt-watchdog.sh
 ```
